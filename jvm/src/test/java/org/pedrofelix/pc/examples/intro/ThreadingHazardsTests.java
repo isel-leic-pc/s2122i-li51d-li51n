@@ -13,11 +13,16 @@ import static org.junit.Assert.assertNotEquals;
 
 public class ThreadingHazardsTests {
 
+    // Number of repetitions performed by each thread
     private static final int N_OF_REPS = 1_000_000;
+
     private static final int N_OF_THREADS = 10;
 
+    /**************************************************************************
+     * This test illustrates the problem of mutating a shared integer,
+     * namely the loss of increments.
+     */
     private int simpleCounter = 0;
-
     @Test
     public void loosing_increments() {
 
@@ -39,8 +44,14 @@ public class ThreadingHazardsTests {
         assertNotEquals(N_OF_THREADS * N_OF_REPS, simpleCounter);
     }
 
-    private volatile int volatileCounter = 0;
 
+    /**************************************************************************
+     * This test illustrates the problem of mutating a shared integer,
+     * namely the loss of increments.
+     * This happens even if the shared counter is marked as volatile,
+     * which doesn't ensure atomicity of increments.
+     */
+    private volatile int volatileCounter = 0;
     @Test
     public void loosing_increments_even_with_volatile() {
 
@@ -61,8 +72,11 @@ public class ThreadingHazardsTests {
         assertNotEquals(N_OF_THREADS * N_OF_REPS, volatileCounter);
     }
 
+    /**************************************************************************
+     * This test illustrates how the shared counter can be correctly
+     * implemented using an AtomicInteger
+     */
     private final AtomicInteger atomicCounter = new AtomicInteger();
-
     @Test
     public void not_loosing_increments_with_atomic() {
 
@@ -83,8 +97,14 @@ public class ThreadingHazardsTests {
         assertEquals(N_OF_THREADS * N_OF_REPS, atomicCounter.get());
     }
 
+    /**************************************************************************
+     * This test illustrates another problem when sharing
+     * mutable data structures, even if they have some data synchronization.
+     * In this case, the problem is typically called a 'check-then-act' hazard
+     * and happens because the shared state can change between
+     * the 'check' and the 'act'
+     */
     private final Map<Integer, AtomicInteger> map = Collections.synchronizedMap(new HashMap<>());
-
     @Test
     public void loosing_increments_with_a_synchronized_map_and_atomics() {
 
@@ -94,8 +114,10 @@ public class ThreadingHazardsTests {
                 for (int j = 0; j < N_OF_REPS; ++j) {
                     // check-then-act
                     AtomicInteger data = map.get(j);
+                    // check...
                     if (data == null) {
                         data = new AtomicInteger(1);
+                        // ... then act
                         map.put(j, data);
                     } else {
                         data.incrementAndGet();
@@ -116,6 +138,11 @@ public class ThreadingHazardsTests {
         assertNotEquals(N_OF_THREADS * N_OF_REPS, totalCount);
     }
 
+    /**************************************************************************
+     * This test illustrates how the previous problem can be solved by
+     * providing an atomic increment operation, using a synchronized block
+     * to ensure mutual exclusion.
+     */
     static class SynchronizedMapCounter {
 
         static class MutableInt {
@@ -163,7 +190,6 @@ public class ThreadingHazardsTests {
                         .collect(Collectors.toList());
             }
         }
-
     }
 
     private static final SynchronizedMapCounter synchronizedMapCounter = new SynchronizedMapCounter();
@@ -191,6 +217,14 @@ public class ThreadingHazardsTests {
         assertEquals(N_OF_THREADS * N_OF_REPS, totalCount);
     }
 
+    /**************************************************************************
+     * This test illustrates how the same problem can be solved by using a
+     * ConcurrentHashMap and the computeIfAbsent that ensures that no more than
+     * one value is inserted for the same key.
+     * Note that the problem requires the Map to expose a different method
+     * - computeIfAbsent. Just providing thread-safe put and get is not enough,
+     * because the 'check-then-act' problem still exists in that case.
+     */
     private static final ConcurrentHashMap<Integer, AtomicInteger> concurrentMap = new ConcurrentHashMap<>();
 
     @Test
@@ -217,6 +251,10 @@ public class ThreadingHazardsTests {
         assertEquals(N_OF_THREADS * N_OF_REPS, totalCount);
     }
 
+    /**************************************************************************
+     * This test is just one more illustration of the hazards associated to
+     * mutable data sharing between threads, without proper synchronization.
+     */
     public static class SimpleLinkedStack<T> {
 
         static class Node<T> {
@@ -230,11 +268,9 @@ public class ThreadingHazardsTests {
         }
 
         Node<T> head = null;
-        Object lock = new Object();
 
         void push(T value) {
-            Node<T> node = new Node<T>(value, head);
-            head = node;
+            head = new Node<>(value, head);
         }
 
         Optional<T> pop() {
@@ -278,6 +314,10 @@ public class ThreadingHazardsTests {
         assertNotEquals(N_OF_THREADS * N_OF_REPS, acc);
     }
 
+    /**************************************************************************
+     * This test shows how the previous problem can be solved by adding
+     * mutual exclusion to all methods.
+     */
     static class SynchronizedLinkedStack<T> {
 
         private final SimpleLinkedStack<T> stack = new SimpleLinkedStack<>();
@@ -306,8 +346,6 @@ public class ThreadingHazardsTests {
 
     @Test
     public void not_loosing_items_on_a_synchronized_list() {
-
-        var counter = new AtomicInteger(0);
 
         var ths = new ArrayList<Thread>(N_OF_THREADS);
         for (int i = 0; i < N_OF_THREADS ; ++i) {
