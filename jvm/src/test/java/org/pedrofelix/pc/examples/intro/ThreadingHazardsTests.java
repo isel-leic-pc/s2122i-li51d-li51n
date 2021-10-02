@@ -13,7 +13,7 @@ import static org.junit.Assert.assertNotEquals;
 
 public class ThreadingHazardsTests {
 
-    private static final int N_OF_REPS = 500000;
+    private static final int N_OF_REPS = 1_000_000;
     private static final int N_OF_THREADS = 10;
 
     private int simpleCounter = 0;
