@@ -12,7 +12,7 @@ Threads are a mechanism provided by operating systems to have multiple *sequenti
 
 - A similar thread concept is also available in _managed_ programming models, such as the ones provided by the JVM and .NET platforms. This is typically done by mapping 1-to-1 _managed_ threads to operating system threads.
 
-- In the Java standard library a thread is created by calling the `Thread` constructor and passing in a `Runnable`, that is an object with a `run` method defining the sequential computation.
+- In the Java standard library a thread is created by calling the `Thread` class constructor and passing in a `Runnable`, that is an object with a `run` method defining the sequential computation.
 
 ## Why have multiple threads?
 
@@ -34,7 +34,8 @@ Threads of the same process are **not isolated**, meaning that they share the sa
 
 ## How are threads implemented?
 
-Operating system implement the ability to have multiple threads, i.e. multiple simultanous sequential computations, by time-multiplexing a set of M threads into a set of N CPUs, where M is typically much larger than N. This is done by a component of the operating system called the **scheduler**.
+Operating system implement the ability to have multiple threads, i.e. multiple simultanous sequential computations, by time-multiplexing a set of M threads into a set of N CPUs, where M is typically much larger than N. 
+This is done by a component of the operating system called the **scheduler**.
 
 Thread states and context switches.
   
@@ -48,7 +49,7 @@ Thread states and context switches.
 
   - **Running** to **Ready**
     - This can happen in two situations:
-      - The running thread calls the operating system to voluntarily give away the owning CPU. This is controlled by the code running in the thread, and therefore deterministic from a program view point.
+      - The running thread calls the operating system to voluntarily give away (i.e. yield) the owning CPU. This is controlled by the code running in the thread, and therefore deterministic from a program view point.
       - The scheduler decides that the running thread should be replaced by another ready thread. This can happen because the running thread is owning a CPU for too long. This is an asynchronously event (e.g. occurring on a system timer interrupt handler) and therefore is completely non-deterministic from a program viewpoint. Namely, it can happen at any assembly instruction boundary, therefore _in the middle_ of an higher-level language statement.
     - When a thread goes from the **Running** state to the **Ready** state, then there is what is called a **context switch**: the context of the previously running thread is saved from the CPU into memory, and the context of the newly running thread is loaded from memory into the CPU.
 
@@ -57,11 +58,11 @@ Thread states and context switches.
     - This also implies a context swith - the ready thread context is loaded from memory into the CPU.
 
   - **Running** to **Not-ready**
-    - This happens when the thread performs an operation whose result is not immediatly available, and therefore the thread doesn't have conditions to keep running.
-    - Examples of such operations are I/O operations (e.g. read from a socket) or thread coordination operations (e.g. acquire a mutex).
+    - This happens when the thread performs an operation whose result is not immediatly available, and therefore the thread doesn't have conditions to contiue running.
+    - Examples of such operations are I/O operations (e.g. read from a socket) or thread coordination operations (e.g. acquire a mutex or an unit from a semaphore).
 
   - **Not-ready** to **Ready**
-    - This happens when the condition required for a thread to continue execution are finally true: e.g. there are bytes available in the socket to read or the OS finally assigned the request mutex to the thread.
+    - This happens when the condition required for a thread to continue execution becomes true: e.g. there are bytes available in the socket to read or the OS finally assigned the request mutex to the thread.
 
 What is the thread context?
 
