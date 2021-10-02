@@ -1,7 +1,7 @@
 # Course outline
 
 ## Course introduction
-- See [0-course-introduction.md].
+- See [0-course-introduction.md](0-course-introduction.md).
 - Goals.
 - Evaluation.
 - Programme.
@@ -18,7 +18,7 @@
   - Servlet example - multiple threads without thread creation
 
 - Introduction to threads
-  - See [1-threads-introduction.md].
+  - See [1-threads-introduction.md](1-threads-introduction.md).
   - What are threads?
     - Sequential computation
     - Share the same process/VM resources, namely memory
@@ -33,7 +33,7 @@
     - scheduler
 
 - Threads in the JVM
-  - See [2-threads-in-the-jvm.md]
+  - See [2-threads-in-the-jvm.md](2-threads-in-the-jvm.md).
   - IntelliJ based visualization of threads
 
 - Echo TCP server example - EchoServer_1_MultiThreaded_Unbound - shared counter
