@@ -20,9 +20,9 @@ Threads are a mechanism provided by operating systems to have multiple *sequenti
   
   - Having multiple-CPU systems is becoming more common. As an example, a medium range smartphone has typically between 4 to 8 CPUs. 
 
-  - A way to take advantage of these system resources is to have a different thread executing on each CPU. This type of design applies well to scenarios where there are enough independent sequential computations to feed these threads. A good example are server systems (e.g. such as the information systems with HTTP interfaces that we developed in the LS course) that have the ability to process requests from different clients simultaneously. In this case the intrisic paralellism, i.e. the independent computations, come from the fact that the systems may be used simultaneously by different users.
+  - A way to take advantage of these system resources is to have a different thread executing on different CPUs. This type of design applies well to scenarios where there are enough independent sequential computations to feed these threads. A good example are server systems (e.g. such as the information systems with HTTP interfaces that we developed in the LS course) that have the ability to process requests from different clients simultaneously. In this case the intrisic paralellism, i.e. the independent computations, come from the fact that the systems may be used simultaneously by different users.
 
-**Code organization** - Sometimes it is simpler to organize a program in multiple sequential computations instead of in a single sequential computation. Server programs are again a good example of this, where the handling of a client request can be organized as an independent sequential computation.
+**Code organization** - Sometimes it is simpler to organize a program in multiple sequential computations instead of in a single sequential computation. Server programs are again a good example of this, where the handling of each client request can be organized as an independent sequential computation.
 
 Threads of the same process are **not isolated**, meaning that they share the same memory space, including both data and code.
   
