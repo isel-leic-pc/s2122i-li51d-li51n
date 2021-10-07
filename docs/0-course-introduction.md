@@ -4,7 +4,7 @@
 
 In summary, provide the knowledge and skills required to design and implement applications over multi-threaded and asynchronous programming models, with emphasis on the concurrency and coordination aspects.
 
-See [_Ficha de unidade curricular_](https://www.isel.pt/disciplinas/programacao-concorrente-leic).
+See [_ficha de unidade curricular_](https://www.isel.pt/disciplinas/programacao-concorrente-leic).
 
 ## Programme
 
@@ -13,7 +13,7 @@ See [_Ficha de unidade curricular_](https://www.isel.pt/disciplinas/programacao-
 - Memory models and lock-free algorithms and data structures.
 - Asynchronous I/O and asynchronous programming models on the JVM platform and the .NET platform.
 
-See [calendar.md] for a more detailed programme, including *relevant dates*.
+See [calendar.md](calendar.md) for a more detailed programme, including *relevant dates*.
 
 ## Evaluation
 
