@@ -1,7 +1,10 @@
 package org.pedrofelix.pc.examples.intro;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.pedrofelix.pc.utils.TestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,19 +13,33 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assume.assumeTrue;
 
 public class ThreadingHazardsTests {
+
+    private static final Logger log = LoggerFactory.getLogger(ThreadingHazardsTests.class);
 
     // Number of repetitions performed by each thread
     private static final int N_OF_REPS = 1_000_000;
 
     private static final int N_OF_THREADS = 10;
 
+    @BeforeClass
+    public static void checkRequirements() {
+        // These tests fail more frequently if running on system with only 1 processor (e.g. CI)
+        var nOfProcessors = Runtime.getRuntime().availableProcessors();
+        log.info("Available processors: {}", nOfProcessors);
+        assumeTrue("Requires a minimum number of processors, otherwise the failure rate is high", nOfProcessors > 2);
+        log.info("Requirements are fulfilled");
+    }
+
+
     /**************************************************************************
      * This test illustrates the problem of mutating a shared integer,
      * namely the loss of increments.
      */
     private int simpleCounter = 0;
+
     @Test
     public void loosing_increments() {
 
@@ -52,6 +69,7 @@ public class ThreadingHazardsTests {
      * which doesn't ensure atomicity of increments.
      */
     private volatile int volatileCounter = 0;
+
     @Test
     public void loosing_increments_even_with_volatile() {
 
@@ -77,6 +95,7 @@ public class ThreadingHazardsTests {
      * implemented using an AtomicInteger
      */
     private final AtomicInteger atomicCounter = new AtomicInteger();
+
     @Test
     public void not_loosing_increments_with_atomic() {
 
@@ -194,7 +213,7 @@ public class ThreadingHazardsTests {
     public void not_loosing_items_on_a_synchronized_list() {
 
         var ths = new ArrayList<Thread>(N_OF_THREADS);
-        for (int i = 0; i < N_OF_THREADS ; ++i) {
+        for (int i = 0; i < N_OF_THREADS; ++i) {
 
             var th = new Thread(() -> {
                 // producer
@@ -223,6 +242,7 @@ public class ThreadingHazardsTests {
      * the 'check' and the 'act'
      */
     private final Map<Integer, AtomicInteger> map = Collections.synchronizedMap(new HashMap<>());
+
     @Test
     public void loosing_increments_with_a_synchronized_map_and_atomics() {
 
