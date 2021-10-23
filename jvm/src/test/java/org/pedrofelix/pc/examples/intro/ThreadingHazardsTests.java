@@ -1,8 +1,10 @@
 package org.pedrofelix.pc.examples.intro;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.pedrofelix.pc.utils.TestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,15 +17,19 @@ import static org.junit.Assume.assumeTrue;
 
 public class ThreadingHazardsTests {
 
+    private static final Logger log = LoggerFactory.getLogger(ThreadingHazardsTests.class);
+
     // Number of repetitions performed by each thread
     private static final int N_OF_REPS = 1_000_000;
 
     private static final int N_OF_THREADS = 10;
 
-    @Before
-    public void checkRequirements() {
+    @BeforeClass
+    public static void checkRequirements() {
         // These tests fail more frequently if running on system with only 1 processor (e.g. CI)
-        assumeTrue(Runtime.getRuntime().availableProcessors() > 1);
+        var nOfProcessors = Runtime.getRuntime().availableProcessors();
+        log.info("Available processors: {}", nOfProcessors);
+        assumeTrue(nOfProcessors > 1);
     }
 
 
