@@ -1,6 +1,5 @@
 package org.pedrofelix.pc.synchronizers;
 
-import org.pedrofelix.pc.utils.NodeLinkedList;
 import org.pedrofelix.pc.utils.Timeouts;
 
 import java.util.concurrent.TimeUnit;
@@ -9,25 +8,16 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Semaphore with n-ary acquisition and release, and FIFO order guarantee.
+ * Semaphore with n-ary acquisition and release, and no acquisition order guarantee.
  */
-public class NArySemaphoreWithFifo implements NArySemaphore {
-
-    private static class Request {
-        public final int requestedUnits;
-
-        public Request(int requestedUnits) {
-            this.requestedUnits = requestedUnits;
-        }
-    }
+public class NArySemaphoreWithoutOrder implements NArySemaphore {
 
     private final Lock monitor = new ReentrantLock();
     private final Condition hasUnits = monitor.newCondition();
 
-    private final NodeLinkedList<Request> requests = new NodeLinkedList<>();
     private int units;
 
-    public NArySemaphoreWithFifo(int initialUnits) {
+    public NArySemaphoreWithoutOrder(int initialUnits) {
         units = initialUnits;
     }
 
@@ -38,8 +28,8 @@ public class NArySemaphoreWithFifo implements NArySemaphore {
         monitor.lock();
         try {
 
-            // fast-path
-            if (requests.isEmpty() && units >= requestedUnits) {
+            // fast-path (non wait-path)
+            if (units >= requestedUnits) {
                 units -= requestedUnits;
                 return true;
             }
@@ -51,29 +41,18 @@ public class NArySemaphoreWithFifo implements NArySemaphore {
             // wait-path
             long deadline = Timeouts.deadlineFor(timeoutInMs);
             long remaining = Timeouts.remainingUntil(deadline);
-            NodeLinkedList.Node<Request> myNode =
-                    requests.enqueue(new Request(requestedUnits));
             while (true) {
-                try {
-                    hasUnits.await(remaining, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    requests.remove(myNode);
-                    signalAllIfNeeded();
-                    throw e;
-                }
 
-                // is the condition true?
-                if (requests.isHeadNode(myNode) && units >= requestedUnits) {
+                // No need to handle exceptions because there are no lost notifications
+                hasUnits.await(remaining, TimeUnit.MILLISECONDS);
+
+                if (units >= requestedUnits) {
                     units -= requestedUnits;
-                    requests.remove(myNode);
-                    signalAllIfNeeded();
                     return true;
                 }
 
                 remaining = Timeouts.remainingUntil(deadline);
                 if (Timeouts.isTimeout(remaining)) {
-                    requests.remove(myNode);
-                    signalAllIfNeeded();
                     return false;
                 }
             }
@@ -87,16 +66,9 @@ public class NArySemaphoreWithFifo implements NArySemaphore {
         monitor.lock();
         try {
             units += releasedUnits;
-            signalAllIfNeeded();
+            hasUnits.signalAll();
         } finally {
             monitor.unlock();
-        }
-    }
-
-    private void signalAllIfNeeded() {
-        if (requests.isNotEmpty() &&
-                units >= requests.getHeadValue().requestedUnits) {
-            hasUnits.signalAll();
         }
     }
 }

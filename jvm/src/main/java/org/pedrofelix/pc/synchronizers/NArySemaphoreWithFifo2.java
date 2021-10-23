@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Semaphore with n-ary acquisition and release, and FIFO order guarantee.
  * Uses specific notification by having a {@link Condition} per request.
  */
-public class NArySemaphoreWithFifo2 {
+public class NArySemaphoreWithFifo2 implements NArySemaphore {
 
     private static class Request {
         public final int requestedUnits;
@@ -34,6 +34,7 @@ public class NArySemaphoreWithFifo2 {
         units = initialUnits;
     }
 
+    @Override
     public boolean acquire(int requestedUnits, long timeoutInMs)
             throws InterruptedException {
 
@@ -84,6 +85,7 @@ public class NArySemaphoreWithFifo2 {
         }
     }
 
+    @Override
     public void release(int releasedUnits) {
         monitor.lock();
         try {

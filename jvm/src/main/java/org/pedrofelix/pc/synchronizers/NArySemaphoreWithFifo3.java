@@ -13,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Uses specific notification by having a {@link Condition} per request.
  * Also uses the kernel-style design.
  */
-public class NArySemaphoreWithFifo3 {
+public class NArySemaphoreWithFifo3 implements NArySemaphore {
 
     private static class Request {
         public final int requestedUnits;
@@ -36,6 +36,7 @@ public class NArySemaphoreWithFifo3 {
         units = initialUnits;
     }
 
+    @Override
     public boolean acquire(int requestedUnits, long timeoutInMs)
             throws InterruptedException {
 
@@ -89,6 +90,7 @@ public class NArySemaphoreWithFifo3 {
         }
     }
 
+    @Override
     public void release(int releasedUnits) {
         monitor.lock();
         try {
