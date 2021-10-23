@@ -29,7 +29,8 @@ public class ThreadingHazardsTests {
         // These tests fail more frequently if running on system with only 1 processor (e.g. CI)
         var nOfProcessors = Runtime.getRuntime().availableProcessors();
         log.info("Available processors: {}", nOfProcessors);
-        assumeTrue(nOfProcessors > 1);
+        assumeTrue("Requires a minimum number of processors, otherwise the failure rate is high", nOfProcessors > 2);
+        log.info("Requirements are fulfilled");
     }
 
 
