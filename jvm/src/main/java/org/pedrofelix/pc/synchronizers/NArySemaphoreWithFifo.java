@@ -1,4 +1,4 @@
-package org.pedrofelix.pc.synch;
+package org.pedrofelix.pc.synchronizers;
 
 import org.pedrofelix.pc.utils.NodeLinkedList;
 import org.pedrofelix.pc.utils.Timeouts;
@@ -10,27 +10,24 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Semaphore with n-ary acquisition and release, and FIFO order guarantee.
- * Uses specific notification by having a {@link Condition} per request.
  */
-public class NAnarySemaphoreWithFifo2 {
+public class NArySemaphoreWithFifo {
 
     private static class Request {
         public final int requestedUnits;
-        public final Condition condition;
 
-        public Request(int requestedUnits, Lock monitor) {
-
+        public Request(int requestedUnits) {
             this.requestedUnits = requestedUnits;
-            this.condition = monitor.newCondition();
         }
     }
 
     private final Lock monitor = new ReentrantLock();
-    private final NodeLinkedList<Request> queue = new NodeLinkedList<>();
+    private final Condition hasUnits = monitor.newCondition();
 
+    private final NodeLinkedList<Request> requests = new NodeLinkedList<>();
     private int units;
 
-    public NAnarySemaphoreWithFifo2(int initialUnits) {
+    public NArySemaphoreWithFifo(int initialUnits) {
         units = initialUnits;
     }
 
@@ -40,12 +37,8 @@ public class NAnarySemaphoreWithFifo2 {
         monitor.lock();
         try {
 
-            if (timeoutInMs < 0) {
-                throw new IllegalArgumentException("timeoutInMs must be >=0");
-            }
-
-            // fast-path (non wait-path)
-            if (queue.isEmpty() && units >= requestedUnits) {
+            // fast-path
+            if (requests.isEmpty() && units >= requestedUnits) {
                 units -= requestedUnits;
                 return true;
             }
@@ -57,28 +50,29 @@ public class NAnarySemaphoreWithFifo2 {
             // wait-path
             long deadline = Timeouts.deadlineFor(timeoutInMs);
             long remaining = Timeouts.remainingUntil(deadline);
-            NodeLinkedList.Node<Request> myNode = queue.enqueue(new Request(requestedUnits, monitor));
+            NodeLinkedList.Node<Request> myNode =
+                    requests.enqueue(new Request(requestedUnits));
             while (true) {
                 try {
-                    myNode.value.condition.await(remaining, TimeUnit.MILLISECONDS);
+                    hasUnits.await(remaining, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
-                    queue.remove(myNode);
-                    signalIfNeeded();
+                    requests.remove(myNode);
+                    signalAllIfNeeded();
                     throw e;
                 }
 
                 // is the condition true?
-                if (queue.isHeadNode(myNode) && units >= requestedUnits) {
+                if (requests.isHeadNode(myNode) && units >= requestedUnits) {
                     units -= requestedUnits;
-                    queue.remove(myNode);
-                    signalIfNeeded();
+                    requests.remove(myNode);
+                    signalAllIfNeeded();
                     return true;
                 }
 
                 remaining = Timeouts.remainingUntil(deadline);
                 if (Timeouts.isTimeout(remaining)) {
-                    queue.remove(myNode);
-                    signalIfNeeded();
+                    requests.remove(myNode);
+                    signalAllIfNeeded();
                     return false;
                 }
             }
@@ -91,15 +85,16 @@ public class NAnarySemaphoreWithFifo2 {
         monitor.lock();
         try {
             units += releasedUnits;
-            signalIfNeeded();
+            signalAllIfNeeded();
         } finally {
             monitor.unlock();
         }
     }
 
-    private void signalIfNeeded() {
-        if (queue.isNotEmpty() && units >= queue.getHeadValue().requestedUnits) {
-            queue.getHeadValue().condition.signal();
+    private void signalAllIfNeeded() {
+        if (requests.isNotEmpty() &&
+                units >= requests.getHeadValue().requestedUnits) {
+            hasUnits.signalAll();
         }
     }
 }

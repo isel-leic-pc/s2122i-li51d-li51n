@@ -1,4 +1,4 @@
-package org.pedrofelix.pc.synch;
+package org.pedrofelix.pc.synchronizers;
 
 import org.pedrofelix.pc.utils.Timeouts;
 
@@ -8,31 +8,28 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Semaphore with unary acquisition and release.
+ * Semaphore with n-ary acquisition and release, and no acquisition order guarantee.
  */
-public class UnarySemaphore {
+public class NArySemaphore {
 
     private final Lock monitor = new ReentrantLock();
     private final Condition hasUnits = monitor.newCondition();
+
     private int units;
 
-    public UnarySemaphore(int initialUnits) {
+    public NArySemaphore(int initialUnits) {
         units = initialUnits;
     }
 
-    public boolean acquire(long timeoutInMs)
+    public boolean acquire(int requestedUnits, long timeoutInMs)
             throws InterruptedException {
 
         monitor.lock();
         try {
 
-            if(timeoutInMs < 0) {
-                throw new IllegalArgumentException("timeoutInMs must be >=0");
-            }
-
             // fast-path (non wait-path)
-            if (units > 0) {
-                units -= 1;
+            if (units >= requestedUnits) {
+                units -= requestedUnits;
                 return true;
             }
 
@@ -44,24 +41,15 @@ public class UnarySemaphore {
             long deadline = Timeouts.deadlineFor(timeoutInMs);
             long remaining = Timeouts.remainingUntil(deadline);
             while (true) {
-                try {
-                    hasUnits.await(remaining, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    // Not really needed on Java,
-                    // see https://docs.oracle.com/javase/specs/jls/se17/html/jls-17.html#jls-17.2.4
-                    if (units > 0) {
-                        hasUnits.signal();
-                    }
-                    throw e;
-                }
 
-                // is the required condition true?
-                if (units > 0) {
-                    units -= 1;
+                // No need to handle exceptions because there are not lost notifications
+                hasUnits.await(remaining, TimeUnit.MILLISECONDS);
+
+                if (units >= requestedUnits) {
+                    units -= requestedUnits;
                     return true;
                 }
 
-                // recompute remaining and check if deadline already reached
                 remaining = Timeouts.remainingUntil(deadline);
                 if (Timeouts.isTimeout(remaining)) {
                     return false;
@@ -72,11 +60,11 @@ public class UnarySemaphore {
         }
     }
 
-    public void release() {
+    public void release(int releasedUnits) {
         monitor.lock();
         try {
-            units += 1;
-            hasUnits.signal();
+            units += releasedUnits;
+            hasUnits.signalAll();
         } finally {
             monitor.unlock();
         }

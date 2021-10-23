@@ -1,4 +1,4 @@
-package org.pedrofelix.pc.synch;
+package org.pedrofelix.pc.synchronizers;
 
 import org.pedrofelix.pc.utils.NodeLinkedList;
 import org.pedrofelix.pc.utils.Timeouts;
@@ -13,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Uses specific notification by having a {@link Condition} per request.
  * Also uses the kernel-style design.
  */
-public class NAnarySemaphoreWithFifo3 {
+public class NArySemaphoreWithFifo3 {
 
     private static class Request {
         public final int requestedUnits;
@@ -32,7 +32,7 @@ public class NAnarySemaphoreWithFifo3 {
 
     private int units;
 
-    public NAnarySemaphoreWithFifo3(int initialUnits) {
+    public NArySemaphoreWithFifo3(int initialUnits) {
         units = initialUnits;
     }
 
