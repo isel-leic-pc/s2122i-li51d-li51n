@@ -81,7 +81,7 @@
 
 ### Week 13 - 10 January
 
-- Kotlin coroutines and flowgit 
+- Kotlin coroutines and flow
 
 ### Week 14 - 17 January
 
