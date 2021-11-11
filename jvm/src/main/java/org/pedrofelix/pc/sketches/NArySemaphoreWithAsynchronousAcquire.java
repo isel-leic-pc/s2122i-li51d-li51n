@@ -2,7 +2,9 @@ package org.pedrofelix.pc.sketches;
 
 import org.pedrofelix.pc.utils.NodeLinkedList;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -125,6 +127,10 @@ public class NArySemaphoreWithAsynchronousAcquire {
                 acquireRequests.remove(node);
                 node.value.isCancelled = true;
                 node.value.condition.signalAll();
+                // FIX: this was missing in the classroom code
+                // It is required because this is an N-Ary semaphore and a withdrawal (give-up)
+                // can create conditions for other requests to be completed
+                completeAllRequestsThatCanBeCompleted();
                 return true;
             } finally {
                 monitor.unlock();
@@ -152,7 +158,7 @@ public class NArySemaphoreWithAsynchronousAcquire {
         }
 
         @Override
-        public Integer get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        public Integer get(long timeout, TimeUnit unit) {
             // left as an exercise
             throw new UnsupportedOperationException("TODO");
         }
