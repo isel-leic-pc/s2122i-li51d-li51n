@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -123,11 +124,48 @@ namespace Tests.Async
             
             return task2;
         }
+
+        [Fact]
+        public void LoopsExamples()
+        {
+            async Task<ISet<int>> SomeLoop(int loopNumber)
+            {
+                var threadIds = new HashSet<int>();
+                for (int i = 0; i < 10; ++i)
+                {
+                    // simulate an asynchronous read/dequeue
+                    await Task.Delay(500);
+                    //Log($"On iteration {i} of loop {loopNumber}");
+                    threadIds.Add(Thread.CurrentThread.ManagedThreadId);
+                }
+
+                return threadIds;
+            }
+
+            var tasks = new List<Task<ISet<int>>>();
+            
+            Log("Before starting all the loops");
+            for (int i = 0; i < 10000; ++i)
+            {
+                tasks.Add(SomeLoop(i));
+            }
+            Log("After starting all the loops");
+            var t = Task.WhenAll(tasks);
+            t.Wait();
+            var unionSet = new HashSet<int>();
+            foreach (var set in t.Result)
+            {
+                unionSet.UnionWith(set);
+            }
+            Log($"Number of used thread: {unionSet.Count}");
+            Log("Ending test");
+        }
         
         private readonly ITestOutputHelper _output;
 
         public TaskExampleTests(ITestOutputHelper output)
         {
+            SynchronizationContext.SetSynchronizationContext(null);
             _output = output;
         }
 

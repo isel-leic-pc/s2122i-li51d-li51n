@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -154,11 +155,47 @@ namespace Tests.Async
             Log("Test about to end");
             return finalTask;
         }
+
+        [Fact]
+        public void LoopsExample()
+        {
+            Log("Starting");
+            async Task<ISet<int>> SomeLoop(int loopIndex)
+            {
+                ISet<int> threadIds = new HashSet<int>();
+                for (int i = 0; i < 10; ++i)
+                {
+                    await Task.Delay(500);
+                    //Log($"On iteration {i} of loop {loopIndex}");
+                    threadIds.Add(Thread.CurrentThread.ManagedThreadId);
+                }
+
+                return threadIds;
+            }
+
+            var tasks = new List<Task<ISet<int>>>();
+            for (int i = 0; i < 100000; ++i)
+            {
+                tasks.Add(SomeLoop(i));
+            }
+            Log("All loops started");
+
+            var all = Task.WhenAll(tasks);
+            all.Wait();
+            var allThreadIds = new HashSet<int>();
+            foreach (var set in all.Result)
+            {
+                allThreadIds.UnionWith(set);   
+            }
+            Log($"Number of used threads: {allThreadIds.Count}");
+            Log("Ending");
+        }
         
         private readonly ITestOutputHelper _output;
 
         public TaskExampleTest3(ITestOutputHelper output)
         {
+            SynchronizationContext.SetSynchronizationContext(null);
             _output = output;
         }
 
