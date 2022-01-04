@@ -16,7 +16,7 @@ namespace Tests.Async
         public void Test()
         {
             const int nReps = 100;
-            const int nLooops = 10;
+            const int nLoops = 10;
             var semaphore = new SimpleAsyncSemaphore(2);
             var counter = 2;
 
@@ -42,7 +42,7 @@ namespace Tests.Async
                 }
             }
 
-            var tasks = Enumerable.Range(0, nLooops)
+            var tasks = Enumerable.Range(0, nLoops)
                 .Select(Loop)
                 .ToArray();
 
